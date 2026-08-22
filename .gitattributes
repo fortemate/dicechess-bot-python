@@ -1,0 +1,25 @@
+# Default behavior: enforce LF line endings for all text files automatically
+* text=auto eol=lf
+
+# Python source files
+*.py          text eol=lf
+
+# Documentation and configuration files
+*.md          text eol=lf
+*.mdx         text eol=lf
+*.txt         text eol=lf
+*.yml         text eol=lf
+*.yaml        text eol=lf
+*.toml        text eol=lf
+.editorconfig text eol=lf
+.gitignore    text eol=lf
+.gitattributes text eol=lf
+
+# Explicit binary declarations
+*.png         binary
+*.jpg         binary
+*.jpeg        binary
+*.gif         binary
+*.webp        binary
+*.ico         binary
+*.svg         text eol=lf

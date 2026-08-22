@@ -1,0 +1,23 @@
+# https://editorconfig.org
+root = true
+
+# Universal default rules applied to all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Python standard
+[*.py]
+indent_style = space
+indent_size = 4
+
+# 2-space indentation standard for YAML, JSON, Markdown
+[*.{yaml,yml,json,toml}]
+indent_style = space
+indent_size = 2
+
+# Markdown specific settings
+[*.{md,mdx}]
+trim_trailing_whitespace = false

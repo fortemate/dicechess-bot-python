@@ -1,0 +1,32 @@
+[project]
+name = "dicechess-bot-python"
+version = "1.0.0"
+description = "A dependency-free Python starter for Dice Chess bots using the standard library."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Jegors Čemisovs" }]
+keywords = ["dicechess", "chess", "bot", "python", "starter-template"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://fortemate.com"
+Documentation = "https://fortemate.com/"
+Source = "https://github.com/fortemate/dicechess-bot-python"
+Issues = "https://github.com/fortemate/dicechess-bot-python/issues"
+
+[tool.ruff]
+line-length = 110
+target-version = "py314"
+
+[tool.ruff.lint]
+ignore = [
+    "EXE001",
+    "UP045",
+    "I001",
+    "UP037",
+    "UP035",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["dicechess"]
