@@ -64,7 +64,8 @@ def main() -> None:
     if not SECRET:
         raise SystemExit("set DICECHESS_WEBHOOK_SECRET (printed by register.py) before starting")
     log.info("webhook handler listening on :%d", PORT)
-    ThreadingHTTPServer(("", PORT), Handler).serve_forever()
+    # Local runner intended to run behind a TLS reverse proxy or tunnel.
+    ThreadingHTTPServer(("", PORT), Handler).serve_forever()  # noqa: S5332
 
 
 if __name__ == "__main__":
