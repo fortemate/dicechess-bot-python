@@ -28,6 +28,10 @@ import time
 
 from dicechess import BotClient, DEFAULT_BASE_URL
 
+# Move choice is not security-sensitive; the OS-backed generator keeps static analysis quiet and
+# needs no seeding.
+_RNG = random.SystemRandom()
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("bot")
 
@@ -45,7 +49,7 @@ def choose_move(legal_moves: dict) -> list[str]:
     path: list[str] = []
     node = legal_moves
     while node:
-        move = random.choice(list(node.keys()))
+        move = _RNG.choice(list(node.keys()))
         path.append(move)
         node = node[move]
     return path

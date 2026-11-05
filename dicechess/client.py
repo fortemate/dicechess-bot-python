@@ -116,47 +116,59 @@ class BotClient:
 
     # ── transport ──────────────────────────────────────────────────────────────
 
+    def _build_request(self, method: str, url: str, payload: bytes | None, auth: bool) -> urllib.request.Request:
+        req = urllib.request.Request(url, data=payload, method=method)
+        req.add_header("User-Agent", USER_AGENT)
+        if payload is not None:
+            req.add_header("Content-Type", "application/json")
+        if auth and self.token:
+            req.add_header("Authorization", f"Bearer {self.token}")
+        return req
+
+    def _retry_delay(self, error: urllib.error.HTTPError, attempt: int) -> float | None:
+        """Seconds to wait before retrying a failed HTTP response, or ``None`` when it is final.
+
+        A ``401`` refreshes the token first and retries immediately (delay ``0``).
+        """
+        status = error.code
+        if attempt > self.max_retries:
+            return None
+        if status == 401 and self._on_unauthorized:
+            log.warning("401 Unauthorized — refreshing token")
+            self._on_unauthorized(self)
+            return 0.0
+        if status == 429:
+            delay = float(error.headers.get("Retry-After", self._backoff(attempt)))
+            log.warning("429 Too Many Requests — retrying in %.1fs", delay)
+            return delay
+        if 500 <= status < 600:
+            delay = self._backoff(attempt)
+            log.warning("HTTP %d — retrying in %.1fs", status, delay)
+            return delay
+        return None
+
     def _request(self, method: str, path: str, body: Any = None, auth: bool = True) -> dict:
         url = f"{self.base_url}{path}"
         payload = json.dumps(body).encode() if body is not None else None
         attempt = 0
         while True:
             attempt += 1
-            req = urllib.request.Request(url, data=payload, method=method)
-            req.add_header("User-Agent", USER_AGENT)
-            if payload is not None:
-                req.add_header("Content-Type", "application/json")
-            if auth and self.token:
-                req.add_header("Authorization", f"Bearer {self.token}")
+            req = self._build_request(method, url, payload, auth)
             try:
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     text = resp.read().decode()
                     return json.loads(text) if text else {}
             except urllib.error.HTTPError as e:
-                status = e.code
-                detail = e.read().decode(errors="replace")
-                if status == 401 and self._on_unauthorized and attempt <= self.max_retries:
-                    log.warning("401 Unauthorized — refreshing token")
-                    self._on_unauthorized(self)
-                    continue
-                if status == 429 and attempt <= self.max_retries:
-                    delay = float(e.headers.get("Retry-After", self._backoff(attempt)))
-                    log.warning("429 Too Many Requests — retrying in %.1fs", delay)
-                    time.sleep(delay)
-                    continue
-                if 500 <= status < 600 and attempt <= self.max_retries:
-                    delay = self._backoff(attempt)
-                    log.warning("HTTP %d — retrying in %.1fs", status, delay)
-                    time.sleep(delay)
-                    continue
-                raise ApiError(status, detail) from e
+                delay = self._retry_delay(e, attempt)
+                if delay is None:
+                    raise ApiError(e.code, e.read().decode(errors="replace")) from e
+                time.sleep(delay)
             except urllib.error.URLError as e:
-                if attempt <= self.max_retries:
-                    delay = self._backoff(attempt)
-                    log.warning("network error %s — retrying in %.1fs", e.reason, delay)
-                    time.sleep(delay)
-                    continue
-                raise
+                if attempt > self.max_retries:
+                    raise
+                delay = self._backoff(attempt)
+                log.warning("network error %s — retrying in %.1fs", e.reason, delay)
+                time.sleep(delay)
 
     @staticmethod
     def _backoff(attempt: int) -> float:
